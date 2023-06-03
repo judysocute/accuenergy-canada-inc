@@ -19,3 +19,19 @@ export async function getCurrentAddress(lat: number, lon: number): Promise<strin
   const openStreetMapResp = await axios.get<Nominatim>(`${OPENSTREETMAP_API}/reverse?${qs.stringify(qsObj)}`);
   return openStreetMapResp.data.display_name;
 }
+
+/**
+ * Search address suggest list by key word.
+ * @param searchString address key word
+ * @param limit default 5 results
+ * @returns 
+ */
+export async function searchAddressListByString(searchString: string, limit: number = 5): Promise<Nominatim[]> {
+  const qsObj = {
+    limit,
+    format: FORMAT,
+    q: searchString,
+  }
+  const openStreetMapResp = await axios.get<Nominatim[]>(`${OPENSTREETMAP_API}/search?${qs.stringify(qsObj)}`);
+  return openStreetMapResp.data;
+}
