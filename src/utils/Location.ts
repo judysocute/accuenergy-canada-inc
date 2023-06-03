@@ -10,14 +10,14 @@ const FORMAT = "jsonv2";
  * @param lon longitude
  * @returns human readable address
  */
-export async function getCurrentAddress(lat: number, lon: number): Promise<string> {
+export async function getCurrentAddress(lat: number, lon: number): Promise<Nominatim> {
   const qsObj = {
     format: FORMAT,
     lat,
     lon
   }
   const openStreetMapResp = await axios.get<Nominatim>(`${OPENSTREETMAP_API}/reverse?${qs.stringify(qsObj)}`);
-  return openStreetMapResp.data.display_name;
+  return openStreetMapResp.data;
 }
 
 /**

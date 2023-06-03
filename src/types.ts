@@ -1,3 +1,22 @@
+export type ADDRESS_LEVEL_STRING = 
+  "house" |
+  "street" |
+  "trunk" |
+  "district" |
+  "city" |
+  "county" |
+  "state" |
+  "country" |
+  "locality" |
+  "place_of_worship" |
+  "administrative" |
+  "religious" |
+  "industrial" |
+  "village" |
+  "suburb" |
+  "hamlet" |
+  "municipality"
+  ;
 export interface Nominatim {
   place_id: number;
   licence: string;
@@ -7,7 +26,7 @@ export interface Nominatim {
   lon: string;
   place_rank: number
   category: string;
-  type: string;
+  type: ADDRESS_LEVEL_STRING;
   importance: number;
   addresstype: string;
   display_name: string;

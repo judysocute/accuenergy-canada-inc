@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getCurrentAddress } from "@/utils/Location";
-const emit = defineEmits<{(e: "getAddress", address: string): void}>();
+import { type Nominatim } from "@/types";
+const emit = defineEmits<{(e: "getAddress", address: Nominatim): void}>();
 function fetchUserAddress(event: MouseEvent) {
   navigator.geolocation.getCurrentPosition(
     async position => {
