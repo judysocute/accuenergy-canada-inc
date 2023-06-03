@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import L from "leaflet";
-import axios from "axios";
-
 import { onMounted, ref } from "vue";
+import { getCurrentAddress } from "./utils/Location"
 
-import { type Nominatim } from "./types";
-
-let displayLocation = ref("");
+let displayAddress = ref("");
 
 onMounted(() => {
   // L.map()
@@ -16,12 +12,7 @@ function fetchUserLocation(event: MouseEvent) {
   navigator.geolocation.getCurrentPosition(
     async position => {
       const { latitude, longitude } = position.coords;
-      // for human readable address
-      const nominatimResp = await axios.get<Nominatim>(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-
-      // console.log("nominatimResp", nominatimResp.data.display_name);
-      displayLocation.value = nominatimResp.data.display_name;
-      console.log(displayLocation)
+      displayAddress.value = await getCurrentAddress(latitude, longitude);
     },
     error => {
       console.log("error", error)
@@ -33,7 +24,7 @@ function fetchUserLocation(event: MouseEvent) {
 <template>
   <main>
     <button @click="fetchUserLocation">Get My Location</button>
-    <p>Your location is: {{displayLocation}}</p>
+    <p>Your location is: {{displayAddress}}</p>
   </main>
 </template>
 
