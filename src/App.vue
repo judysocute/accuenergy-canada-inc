@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { type ADDRESS_LEVEL_STRING, type Nominatim }from "./types";
 import L, { Marker, type LatLngExpression } from "leaflet";
 import { convertToAddressLevelNumber, generateMainMarker } from "@/utils/LeafletMap";
@@ -12,7 +12,9 @@ let displayAddress = ref("");
 const suggestList = reactive<{ value: Nominatim[]}>({ value: [] });
 let mainMap: L.Map;
 let mainMarker: Marker;
+let markerMap: Map<number, Marker> = new Map();
 const searchedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
+const checkedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
 
 onMounted(() => {
   mainMap = L.map("mainMap").setView([0, 0], 1);
@@ -39,6 +41,17 @@ function addMainMarker(latLng: LatLngExpression, markerTitle: string) {
   initMap();
   mainMarker = generateMainMarker(latLng, markerTitle);
   mainMarker.addTo(mainMap);
+}
+
+function addMarker(markerId: number, latLng: LatLngExpression, markerTitle: string) {
+  const marker = generateMainMarker(latLng, markerTitle);
+  markerMap.set(markerId, marker);
+  marker.addTo(mainMap);
+}
+
+function removeMarkerById(markerId: number) {
+  const targetMarker = markerMap.get(markerId);
+  targetMarker?.remove();
 }
 
 function addRecordToSearchedPlaces(locationObj : Nominatim) {
@@ -82,6 +95,18 @@ function pickLocation(locationObj : Nominatim) {
   displayAddress.value = display_name;
   addRecordToSearchedPlaces(locationObj);
 }
+
+function changeCheckedPlaces(e: Event, record: Nominatim) {
+  const { lat, lon } = record;
+  const latLng: LatLngExpression = [+lat, +lon];
+  const isChecked = (e.target as HTMLInputElement).checked;
+  if (isChecked) {
+    addMarker(record.place_id ,latLng, record.display_name);
+  } else {
+    removeMarkerById(record.place_id);
+  }
+}
+
 </script>
 
 <template>
@@ -101,6 +126,12 @@ function pickLocation(locationObj : Nominatim) {
     <hr />
     <ul>
       <li v-for="place in searchedPlaces.value" :key="place.place_id">
+        <input
+          :value="place"
+          type="checkbox"
+          v-model="checkedPlaces.value"
+          @change="(e) => changeCheckedPlaces(e, place)"
+        />
         {{ place.display_name }}
       </li>
     </ul>
