@@ -9,9 +9,10 @@ import GetUserAddressButton from "./components/GetUserAddressButton.vue";
 import UserSearchBar from "./components/UserSearchBar.vue";
 
 let displayAddress = ref("");
-let suggestList = reactive<{ value: Nominatim[]}>({ value: [] });
+const suggestList = reactive<{ value: Nominatim[]}>({ value: [] });
 let mainMap: L.Map;
 let mainMarker: Marker;
+const searchedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
 
 onMounted(() => {
   mainMap = L.map("mainMap").setView([0, 0], 1);
@@ -40,23 +41,46 @@ function addMainMarker(latLng: LatLngExpression, markerTitle: string) {
   mainMarker.addTo(mainMap);
 }
 
+function addRecordToSearchedPlaces(locationObj : Nominatim) {
+  const noDuplicated = searchedPlaces.value.every((item) => {
+    if (item.place_id === locationObj.place_id) {
+      return false;
+    }
+    return true;
+  });
+  if (noDuplicated) {
+    // if no duplicate, add the record to queue
+    searchedPlaces.value.push(locationObj);
+    const currLength = searchedPlaces.value.length;
+    if (currLength > 10) {
+      // if the record queue size is longer than 10
+      // We have to splice the first item to the last item subtract 10 in order to keep it 10.
+      searchedPlaces.value.splice(0, currLength - 10);
+    }
+  }
+}
+
 function focusToLocation(latLng: LatLngExpression, type: ADDRESS_LEVEL_STRING) {
   mainMap.setView(latLng, convertToAddressLevelNumber(type));
 }
 
-function getUserCurrentLocation({ lat, lon, display_name, type } : Nominatim) {
+function getUserCurrentLocation(locationObj : Nominatim) {
+  const { lat, lon, display_name, type } = locationObj;
   const latLng: LatLngExpression = [+lat, +lon];
   addMainMarker(latLng, "Your current location");
   focusToLocation(latLng, type);
   displayAddress.value = display_name;
+  addRecordToSearchedPlaces(locationObj);
 }
 
 // User picked a location from suggest list
-function pickLocation({ lat, lon, display_name, type } : Nominatim) {
+function pickLocation(locationObj : Nominatim) {
+  const { lat, lon, display_name, type } = locationObj;
   const latLng: LatLngExpression = [+lat, +lon];
   addMainMarker(latLng, "Location you picked");
   focusToLocation(latLng, type);
   displayAddress.value = display_name;
+  addRecordToSearchedPlaces(locationObj);
 }
 </script>
 
@@ -72,6 +96,12 @@ function pickLocation({ lat, lon, display_name, type } : Nominatim) {
         :key="suggestItem.place_id"
       >
         {{ suggestItem.display_name }}
+      </li>
+    </ul>
+    <hr />
+    <ul>
+      <li v-for="place in searchedPlaces.value" :key="place.place_id">
+        {{ place.display_name }}
       </li>
     </ul>
     <div id="mainMap"></div>

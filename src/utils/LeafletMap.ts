@@ -8,7 +8,7 @@ const addressLevelMap = new Map<ADDRESS_LEVEL_STRING, number>([
   ["district", 13],
   ["religious", 13],
   ["place_of_worship", 13],
-  ["administrative", 9],
+  ["administrative", 4],
   ["industrial", 10],
   ["village", 10],
   ["suburb", 10],
