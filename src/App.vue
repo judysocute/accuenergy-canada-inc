@@ -17,7 +17,8 @@ const searchedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
 const checkedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
 
 onMounted(() => {
-  mainMap = L.map("mainMap").setView([0, 0], 1);
+  mainMap = L.map("mainMap");
+  mainMap.setView([0, 0], 1);
   L.tileLayer(
     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
@@ -28,6 +29,20 @@ onMounted(() => {
   ).addTo(mainMap);
 })
 
+function removeMainMarker() {
+  if (mainMarker) {
+    mainMarker.remove(); // remove the main marker
+  }
+}
+
+function removeAllMarkers() {
+  markerMap.forEach((item, id) => {
+    removeMarkerById(id);
+  });
+  markerMap.clear();
+  mainMarker.remove();
+}
+
 /**
  * initial map status
  */
@@ -35,16 +50,19 @@ function initMap() {
   if (mainMarker) {
     mainMarker.remove(); // remove the main marker
   }
+  removeAllMarkers();
+  mainMap.setView([0, 0], 1);
 }
 
 function addMainMarker(latLng: LatLngExpression, markerTitle: string) {
-  initMap();
+  removeMainMarker();
   mainMarker = generateMainMarker(latLng, markerTitle);
   mainMarker.addTo(mainMap);
 }
 
 function addMarker(markerId: number, latLng: LatLngExpression, markerTitle: string) {
   const marker = generateMainMarker(latLng, markerTitle);
+  focusToLocation(latLng);
   markerMap.set(markerId, marker);
   marker.addTo(mainMap);
 }
@@ -73,14 +91,14 @@ function addRecordToSearchedPlaces(locationObj : Nominatim) {
   }
 }
 
-function focusToLocation(latLng: LatLngExpression, type: ADDRESS_LEVEL_STRING) {
+function focusToLocation(latLng: LatLngExpression, type: ADDRESS_LEVEL_STRING = "city") {
   mainMap.setView(latLng, convertToAddressLevelNumber(type));
 }
 
 function getUserCurrentLocation(locationObj : Nominatim) {
   const { lat, lon, display_name, type } = locationObj;
   const latLng: LatLngExpression = [+lat, +lon];
-  addMainMarker(latLng, "Your current location");
+  addMainMarker(latLng, display_name);
   focusToLocation(latLng, type);
   displayAddress.value = display_name;
   addRecordToSearchedPlaces(locationObj);
@@ -90,7 +108,7 @@ function getUserCurrentLocation(locationObj : Nominatim) {
 function pickLocation(locationObj : Nominatim) {
   const { lat, lon, display_name, type } = locationObj;
   const latLng: LatLngExpression = [+lat, +lon];
-  addMainMarker(latLng, "Location you picked");
+  addMainMarker(latLng, display_name);
   focusToLocation(latLng, type);
   displayAddress.value = display_name;
   addRecordToSearchedPlaces(locationObj);
@@ -107,12 +125,19 @@ function changeCheckedPlaces(e: Event, record: Nominatim) {
   }
 }
 
+function removeAllSelected() {
+  checkedPlaces.value.length = 0;
+  removeAllMarkers();
+  initMap();
+}
+
 </script>
 
 <template>
   <main>
     <UserSearchBar @get-suggest-list="(itemList) => suggestList.value = itemList" />
     <GetUserAddressButton @get-address="(locationObj) => getUserCurrentLocation(locationObj)"/>
+    <button @click="removeAllSelected">Remove All Selected</button>
     <p>Your location is: {{displayAddress}}</p>
     <ul>
       <li
