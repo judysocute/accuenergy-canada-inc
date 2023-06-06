@@ -50,3 +50,11 @@ export interface Nominatim {
     "3": string;
   }
 }
+
+export interface GoogleTimeZoneInfo {
+  dstOffset: number;
+  rawOffset: number;
+  status: string;
+  timeZoneId: string;
+  timeZoneName: string;
+}

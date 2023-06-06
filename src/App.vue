@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
-import { type Nominatim }from "./types";
+import { reactive, ref, computed } from "vue";
+import moment from "moment-timezone";
+import { type Nominatim, type GoogleTimeZoneInfo }from "./types";
 import "leaflet/dist/leaflet.css"
 
 import MainMap from "@/components/MainMap.vue";
 import GetUserAddressButton from "@/components/GetUserAddressButton.vue";
 import UserSearchBar from "@/components/UserSearchBar.vue";
+import { getTimeZoneFromGoogleApi } from "@/utils/Location";
 
-let displayAddress = ref("");
+let timezoneInfo = reactive({
+  value: {
+    dstOffset: 0,
+    rawOffset: 0,
+    status: "",
+    timeZoneId: "",
+    timeZoneName: "",
+  }
+});
 const suggestList = reactive<{ value: Nominatim[]}>({ value: [] });
 let mainLocation = reactive<{ value: Nominatim | undefined}>({ value: undefined });
 const selectedLocations = reactive<{ value: Nominatim[]}>({ value: [] }); // max 10
@@ -39,16 +49,20 @@ function addRecordToSearchedPlaces(locationObj : Nominatim) {
   }
 }
 
+async function setDisplayLocation(locationObj: Nominatim) {
+  const { lat, lon } = locationObj;
+  timezoneInfo.value = await getTimeZoneFromGoogleApi(+lat, +lon);
+}
+
 function getUserCurrentLocation(locationObj : Nominatim) {
   mainLocation.value = locationObj;
-  displayAddress.value = locationObj.display_name;
+  setDisplayLocation(locationObj);
 }
 
 // // User picked a location from suggest list
 function pickLocation(locationObj : Nominatim) {
-  const { display_name } = locationObj;
   mainLocation.value = locationObj;
-  displayAddress.value = display_name;
+  setDisplayLocation(locationObj);
   addRecordToSearchedPlaces(locationObj);
 }
 
@@ -59,6 +73,14 @@ function removeAllCheckedLocations() {
   mainLocation.value = undefined;
 }
 
+// =====================================
+const displayTime = computed(() => {
+  const { timeZoneId, timeZoneName } = timezoneInfo.value || {};
+  return moment().tz(timeZoneId) ?
+    `${moment().tz(timeZoneId).format("YYYY-MM-DD LT")} ${timeZoneName}`:
+    "";
+});
+
 </script>
 
 <template>
@@ -66,14 +88,14 @@ function removeAllCheckedLocations() {
     <UserSearchBar @get-suggest-list="(itemList) => suggestList.value = itemList" />
     <GetUserAddressButton @get-address="(locationObj) => getUserCurrentLocation(locationObj)"/>
     <button @click="removeAllCheckedLocations">Remove All Selected</button>
-    <p>Your location is: {{displayAddress}}</p>
+    <p v-if="mainLocation.value">Your location is: {{mainLocation.value.display_name}} {{displayTime}}</p>
     <ul>
       <li
         @click="() => pickLocation(suggestItem)"
         v-for="suggestItem in suggestList.value"
         :key="suggestItem.place_id"
       >
-        {{ suggestItem.display_name }}
+        {{ `${suggestItem.display_name} - ${timezoneInfo.value.timeZoneName}` }}
       </li>
     </ul>
     <hr />
@@ -84,7 +106,7 @@ function removeAllCheckedLocations() {
           type="checkbox"
           v-model="checkedLocations.value"
         />
-        {{ `${idx + 1} - ${place.display_name}` }}
+        {{ `${idx + 1} - ${place.display_name}`}}
       </li>
     </ul>
     <MainMap :main-location="mainLocation.value" :checked-locations="checkedLocations.value" />

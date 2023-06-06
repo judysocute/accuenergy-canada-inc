@@ -36,7 +36,6 @@ onMounted(() => {
 });
 
 watch(() => props.mainLocation, (newLocation, oldLocation) => {
-  console.log("main", newLocation);
   if (newLocation) {
     const { lat, lon } = newLocation;
     currentMainMarker?.remove();
