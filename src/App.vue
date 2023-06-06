@@ -1,79 +1,23 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from "vue";
-import { type ADDRESS_LEVEL_STRING, type Nominatim }from "./types";
-import L, { Marker, type LatLngExpression } from "leaflet";
-import { convertToAddressLevelNumber, generateMainMarker } from "@/utils/LeafletMap";
+import { reactive, ref } from "vue";
+import { type Nominatim }from "./types";
 import "leaflet/dist/leaflet.css"
 
-import GetUserAddressButton from "./components/GetUserAddressButton.vue";
-import UserSearchBar from "./components/UserSearchBar.vue";
+import MainMap from "@/components/MainMap.vue";
+import GetUserAddressButton from "@/components/GetUserAddressButton.vue";
+import UserSearchBar from "@/components/UserSearchBar.vue";
 
 let displayAddress = ref("");
 const suggestList = reactive<{ value: Nominatim[]}>({ value: [] });
-let mainMap: L.Map;
-let mainMarker: Marker;
-let markerMap: Map<number, Marker> = new Map();
-const searchedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
-const checkedPlaces = reactive<{ value: Nominatim[]}>({ value: [] });
+let mainLocation = reactive<{ value: Nominatim | undefined}>({ value: undefined });
+const selectedLocations = reactive<{ value: Nominatim[]}>({ value: [] }); // max 10
+const checkedLocations = reactive<{ value: Nominatim[]}>({ value: [] });
 
-onMounted(() => {
-  mainMap = L.map("mainMap");
-  mainMap.setView([0, 0], 1);
-  L.tileLayer(
-    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      attribution:
-        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }
-  ).addTo(mainMap);
-})
-
-function removeMainMarker() {
-  if (mainMarker) {
-    mainMarker.remove(); // remove the main marker
-  }
-}
-
-function removeAllMarkers() {
-  markerMap.forEach((item, id) => {
-    removeMarkerById(id);
-  });
-  markerMap.clear();
-  mainMarker.remove();
-}
-
-/**
- * initial map status
- */
-function initMap() {
-  if (mainMarker) {
-    mainMarker.remove(); // remove the main marker
-  }
-  removeAllMarkers();
-  mainMap.setView([0, 0], 1);
-}
-
-function addMainMarker(latLng: LatLngExpression, markerTitle: string) {
-  removeMainMarker();
-  mainMarker = generateMainMarker(latLng, markerTitle);
-  mainMarker.addTo(mainMap);
-}
-
-function addMarker(markerId: number, latLng: LatLngExpression, markerTitle: string) {
-  const marker = generateMainMarker(latLng, markerTitle);
-  focusToLocation(latLng);
-  markerMap.set(markerId, marker);
-  marker.addTo(mainMap);
-}
-
-function removeMarkerById(markerId: number) {
-  const targetMarker = markerMap.get(markerId);
-  targetMarker?.remove();
-}
+// =====================================
 
 function addRecordToSearchedPlaces(locationObj : Nominatim) {
-  const noDuplicated = searchedPlaces.value.every((item) => {
+  const noDuplicated = selectedLocations.value.every((item) => {
+    // check if selected location is duplicated
     if (item.place_id === locationObj.place_id) {
       return false;
     }
@@ -81,54 +25,38 @@ function addRecordToSearchedPlaces(locationObj : Nominatim) {
   });
   if (noDuplicated) {
     // if no duplicate, add the record to queue
-    searchedPlaces.value.push(locationObj);
-    const currLength = searchedPlaces.value.length;
+    selectedLocations.value.push(locationObj);
+    const currLength = selectedLocations.value.length;
     if (currLength > 10) {
       // if the record queue size is longer than 10
       // We have to splice the first item to the last item subtract 10 in order to keep it 10.
-      searchedPlaces.value.splice(0, currLength - 10);
+
+      const removedItem = selectedLocations.value.splice(0, currLength - 10)[0];
+      checkedLocations.value = checkedLocations.value.filter(checkedLocation => {
+        return checkedLocation.place_id !== removedItem.place_id;
+      });
     }
   }
 }
 
-function focusToLocation(latLng: LatLngExpression, type: ADDRESS_LEVEL_STRING = "city") {
-  mainMap.setView(latLng, convertToAddressLevelNumber(type));
-}
-
 function getUserCurrentLocation(locationObj : Nominatim) {
-  const { lat, lon, display_name, type } = locationObj;
-  const latLng: LatLngExpression = [+lat, +lon];
-  addMainMarker(latLng, display_name);
-  focusToLocation(latLng, type);
-  displayAddress.value = display_name;
-  addRecordToSearchedPlaces(locationObj);
+  mainLocation.value = locationObj;
+  displayAddress.value = locationObj.display_name;
 }
 
-// User picked a location from suggest list
+// // User picked a location from suggest list
 function pickLocation(locationObj : Nominatim) {
-  const { lat, lon, display_name, type } = locationObj;
-  const latLng: LatLngExpression = [+lat, +lon];
-  addMainMarker(latLng, display_name);
-  focusToLocation(latLng, type);
+  const { display_name } = locationObj;
+  mainLocation.value = locationObj;
   displayAddress.value = display_name;
   addRecordToSearchedPlaces(locationObj);
 }
 
-function changeCheckedPlaces(e: Event, record: Nominatim) {
-  const { lat, lon } = record;
-  const latLng: LatLngExpression = [+lat, +lon];
-  const isChecked = (e.target as HTMLInputElement).checked;
-  if (isChecked) {
-    addMarker(record.place_id ,latLng, record.display_name);
-  } else {
-    removeMarkerById(record.place_id);
-  }
-}
-
-function removeAllSelected() {
-  checkedPlaces.value.length = 0;
-  removeAllMarkers();
-  initMap();
+function removeAllCheckedLocations() {
+  selectedLocations.value.length = 0;
+  checkedLocations.value.length = 0;
+  checkedLocations.value = [ ...checkedLocations.value ];
+  mainLocation.value = undefined;
 }
 
 </script>
@@ -137,7 +65,7 @@ function removeAllSelected() {
   <main>
     <UserSearchBar @get-suggest-list="(itemList) => suggestList.value = itemList" />
     <GetUserAddressButton @get-address="(locationObj) => getUserCurrentLocation(locationObj)"/>
-    <button @click="removeAllSelected">Remove All Selected</button>
+    <button @click="removeAllCheckedLocations">Remove All Selected</button>
     <p>Your location is: {{displayAddress}}</p>
     <ul>
       <li
@@ -150,17 +78,16 @@ function removeAllSelected() {
     </ul>
     <hr />
     <ul>
-      <li v-for="place in searchedPlaces.value" :key="place.place_id">
+      <li v-for="(place, idx) in selectedLocations.value" :key="place.place_id">
         <input
           :value="place"
           type="checkbox"
-          v-model="checkedPlaces.value"
-          @change="(e) => changeCheckedPlaces(e, place)"
+          v-model="checkedLocations.value"
         />
-        {{ place.display_name }}
+        {{ `${idx + 1} - ${place.display_name}` }}
       </li>
     </ul>
-    <div id="mainMap"></div>
+    <MainMap :main-location="mainLocation.value" :checked-locations="checkedLocations.value" />
   </main>
 </template>
 

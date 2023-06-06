@@ -5,9 +5,13 @@ import { type Nominatim }from "@/types";
 let searchingInput = ref("");
 
 const emit = defineEmits<{(e: "getSuggestList", suggestList: Nominatim[]): void}>();
+const loading = ref(false);
 
 async function fetchAddressSuggestList(keyWord: string) {
+  loading.value = true;
+  
   const suggestList = await searchAddressListByString(keyWord);
+  loading.value = false;
   emit("getSuggestList", suggestList);
 }
 

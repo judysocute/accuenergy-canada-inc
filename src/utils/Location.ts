@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type CancelTokenSource } from "axios";
 import qs from "query-string";
 import { type Nominatim } from "../types";
 const OPENSTREETMAP_API = "https://nominatim.openstreetmap.org";
@@ -32,6 +32,13 @@ export async function searchAddressListByString(searchString: string, limit: num
     format: FORMAT,
     q: searchString,
   }
-  const openStreetMapResp = await axios.get<Nominatim[]>(`${OPENSTREETMAP_API}/search?${qs.stringify(qsObj)}`);
+  const openStreetMapResp = await axios.get<Nominatim[]>(`${OPENSTREETMAP_API}/search?${qs.stringify(qsObj)}`, {
+    // signal: abortController.signal,
+    // cancelToken: tokenSource.token,
+  });
   return openStreetMapResp.data;
+  // const openStreetMapResp = await axios.get<Nominatim[]>(`${OPENSTREETMAP_API}/search?${qs.stringify(qsObj)}`, {
+  //   signal: abortController.signal,
+  // });
+  // return openStreetMapResp.data;
 }

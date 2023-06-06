@@ -1,6 +1,13 @@
 
-import { Marker, type LatLngExpression, type MarkerOptions } from "leaflet";
+import { Icon, Marker, type LatLngExpression, type MarkerOptions } from "leaflet";
 import { type ADDRESS_LEVEL_STRING } from "@/types";
+
+import MainMarkerIcon from "@/assets/icons/marker_main.png";
+import GeneralMarkerIcon from "@/assets/icons/marker_general.png";
+
+const mainIcon = new Icon({ iconUrl: MainMarkerIcon, iconSize: [ 30, 30 ] });
+const generalIcon = new Icon({ iconUrl: GeneralMarkerIcon, iconSize: [ 30, 30 ] });
+
 const addressLevelMap = new Map<ADDRESS_LEVEL_STRING, number>([
   ["house", 15],
   ["street", 14],
@@ -22,18 +29,41 @@ const addressLevelMap = new Map<ADDRESS_LEVEL_STRING, number>([
 ]);
 
 /**
+ * generate marker core
+ * @param latLng 
+ * @param markerTitle 
+ * @param icon
+ * @returns 
+ */
+function generateMarker(latLng: LatLngExpression, markerTitle: string, icon: Icon) {
+  const markerOption: MarkerOptions = {
+    icon: icon,
+    title: markerTitle,
+  };
+  
+  return new Marker(latLng, markerOption);
+};
+/**
+ * Generate general marker for the Leaflet Map.
+ * @param latLng 
+ * @param markerTitle 
+ * @returns 
+ */
+export function generateGeneralMarker(latLng: LatLngExpression, markerTitle: string): Marker {
+  return generateMarker(latLng, markerTitle, generalIcon);
+}
+
+/**
  * Generate main marker for the Leaflet Map.
  * @param latLng 
  * @param markerTitle 
  * @returns 
  */
 export function generateMainMarker(latLng: LatLngExpression, markerTitle: string): Marker {
-  const markerOption: MarkerOptions = {
-    title: markerTitle,
-  };
-  
-  return new Marker(latLng, markerOption);
+  return generateMarker(latLng, markerTitle, mainIcon);
 }
+
+
 
 export function convertToAddressLevelNumber(type: ADDRESS_LEVEL_STRING): number {
   return addressLevelMap.get(type) || 10;
