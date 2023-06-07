@@ -17,7 +17,12 @@ function fetchUserAddress(event: MouseEvent) {
 </script>
 
 <template>
-  <button @click="fetchUserAddress">Get My Location</button>
+  <v-btn
+    prepend-icon="mdi-map-marker-outline"
+    variant="tonal"
+    @click="fetchUserAddress"
+    width="400"
+  >Get My Location</v-btn>
 </template>
 
 <style scoped>

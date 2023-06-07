@@ -30,7 +30,19 @@ watch(searchingInput, (currString, oldString) => {
 </script>
 
 <template>
-  <input v-model="searchingInput" @keyup="keyupHandler"/>
+  <v-text-field
+    v-model="searchingInput"
+    label="Start your search"
+    :loading="loading"
+    placeholder="Start your search"
+    @keyup="keyupHandler"
+  >
+  </v-text-field>
+  <!-- <v-text-field
+    label="Start your search"
+    v-model="searchingInput"
+    @keyup="keyupHandler"
+  /> -->
 </template>
 
 <style></style>

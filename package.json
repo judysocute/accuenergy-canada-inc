@@ -18,9 +18,11 @@
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
     "query-string": "^8.1.0",
-    "vue": "^3.3.2"
+    "vue": "^3.3.2",
+    "vuetify": "^3.3.2"
   },
   "devDependencies": {
+    "@mdi/font": "^7.2.96",
     "@rushstack/eslint-patch": "^1.2.0",
     "@tsconfig/node18": "^2.0.1",
     "@types/axios": "^0.14.0",

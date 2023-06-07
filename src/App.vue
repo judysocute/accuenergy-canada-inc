@@ -84,33 +84,52 @@ const displayTime = computed(() => {
 </script>
 
 <template>
-  <main>
-    <UserSearchBar @get-suggest-list="(itemList) => suggestList.value = itemList" />
-    <GetUserAddressButton @get-address="(locationObj) => getUserCurrentLocation(locationObj)"/>
-    <button @click="removeAllCheckedLocations">Remove All Selected</button>
-    <p v-if="mainLocation.value">Your location is: {{mainLocation.value.display_name}} {{displayTime}}</p>
-    <ul>
-      <li
-        @click="() => pickLocation(suggestItem)"
-        v-for="suggestItem in suggestList.value"
-        :key="suggestItem.place_id"
-      >
-        {{ `${suggestItem.display_name} - ${timezoneInfo.value.timeZoneName}` }}
-      </li>
-    </ul>
-    <hr />
-    <ul>
-      <li v-for="(place, idx) in selectedLocations.value" :key="place.place_id">
-        <input
-          :value="place"
-          type="checkbox"
-          v-model="checkedLocations.value"
+  <v-container>
+    <v-row>
+      <v-col>
+        <UserSearchBar @get-suggest-list="(itemList) => suggestList.value = itemList" />
+      </v-col>
+      <v-col justify="end" cols="3">
+        <GetUserAddressButton
+          class="mr-2 mb-2"
+          @get-address="(locationObj) => getUserCurrentLocation(locationObj)"
         />
-        {{ `${idx + 1} - ${place.display_name}`}}
-      </li>
-    </ul>
+        <v-btn
+          width="400"
+          variant="tonal"
+          color="red"
+          @click="removeAllCheckedLocations"
+        >
+          Remove All Selected
+        </v-btn>
+      </v-col>
+    </v-row>
+    <v-row class="ma-2">
+      <p v-if="mainLocation.value">Your location is: {{mainLocation.value.display_name}} {{displayTime}}</p>
+    </v-row>
+    <v-row>
+      <v-list lines="two" max-width="500" bg-color="black">
+        <v-list-item
+          v-for="suggestItem in suggestList.value"
+          prepend-icon="mdi-map-marker-outline"
+          @click="() => pickLocation(suggestItem)"
+          :key="suggestItem.place_id"
+          :title="suggestItem.category"
+          :subtitle="suggestItem.display_name"
+        ></v-list-item>
+      </v-list>
+    </v-row>
+    <v-row>
+      <v-col cols=2 v-for="(place, idx) in selectedLocations.value" :key="place.place_id">
+        <v-checkbox 
+          :value="place"
+          v-model="checkedLocations.value"
+          :label="place.display_name"
+        />
+      </v-col>
+    </v-row>
     <MainMap :main-location="mainLocation.value" :checked-locations="checkedLocations.value" />
-  </main>
+  </v-container>
 </template>
 
 <style scoped>
